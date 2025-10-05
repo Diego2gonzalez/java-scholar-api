@@ -20,7 +20,10 @@ The application works in a simple, step-by-step process:
    +-- Enter an Author's ID
    |           |
    |           v
-   +---- Shows the Detailed Profile
+   +---- Shows the Detailed Profile & Articles
+   |           |
+   |           v
+   +---- Asks to Save -> [Database]
 ```
 
 ## Key Features
@@ -29,9 +32,9 @@ The application works in a simple, step-by-step process:
     1. Search by name to list authors and their IDs.
     2. Search by ID to get a detailed profile.
 - **REST API Consumption:** Makes GET requests to the SerpApi to retrieve data from Google Scholar.
-- **JSON Mapping:** Uses the Gson library to automatically convert JSON responses from the API into Java objects.
+- **Database Integration:** Saves author articles to a MySQL database with user confirmation.
+- **JSON Mapping:** Uses the Gson library to automatically convert JSON responses into Java objects.
 - **Error Handling:** Validates API responses and handles potential connection or API errors.
-- **Console Interface:** An interactive application that guides the user through the search process.
 
 ## Technology Stack
 
@@ -40,8 +43,12 @@ The application works in a simple, step-by-step process:
 - **Core Libraries:**
     - **Apache HttpClient:** for making GET requests to the API.
     - **Google Gson:** for JSON serialization and deserialization.
+    - **MySQL Connector/J:** for database connectivity.
 - **External API:** SerpApi (Google Scholar API)
-- **IDE:** IntelliJ IDEA
+- **Database:** MySQL 8.0
+- **Development Tools:**
+    - **IDE:** IntelliJ IDEA
+    - **Database Client:** MySQL Workbench
 
 ## How to Run the Project
 
@@ -49,6 +56,7 @@ The application works in a simple, step-by-step process:
 
 - Java JDK 17 or higher installed.
 - Apache Maven installed.
+- MySQL Server 8.0 running.
 - An API key from [SerpApi](https://serpapi.com/).
 
 ### Steps
@@ -59,46 +67,15 @@ The application works in a simple, step-by-step process:
    cd [PROJECT-NAME]
    ```
 
-2. **Install dependencies:**
-   Maven will automatically download the necessary libraries.
+2. **Database Setup:**
+   Run the SQL script provided in the technical report to create the `scholar_db` database and the `articles` table.
 
-3. **Configure the API Key:**
-   Ensure your SerpApi key is set in the `apiKey` variable inside the `AuthorController.java` file.
+3. **Configure Credentials:**
+    - In `AuthorController.java`, set your SerpApi key.
+    - In `DatabaseManager.java`, set your MySQL username and password.
 
 4. **Compile and Run:**
-   From the project's root directory, run the `Main` class:
    ```bash
    mvn compile
    mvn exec:java -Dexec.mainClass="com.scholarservice.Main"
    ```
-
-## Usage Example
-
-The console will prompt you to enter an author's name.
-
-```
-Enter the author's name to search: yoshua bengio
-```
-
-It will then display a list of authors found with their IDs.
-
-```
---- The following authors were found ---
-Please copy and paste the ID of the author you are interested in:
-ID: vsj2slIAAAAJ | Name: Yoshua Bengio
-ID: HFtCH-AAAAAJ | Name: Samy Bengio
--------------------------------------------
-```
-
-Finally, you enter the desired ID to see the full profile.
-
-```
-Enter the ID of the author to see their details: vsj2slIAAAAJ
-
---- Author's Detailed Profile ---
-Name: Yoshua Bengio
-Affiliation: Mila, U. de Montréal, IVADO, CIFAR, GenAI, Scale AI, Recursion
-Email: Verified email at umontreal.ca
-Total Citations: 805341
------------------------------------
-```
