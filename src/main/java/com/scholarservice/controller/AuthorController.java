@@ -12,6 +12,7 @@ import org.apache.http.util.EntityUtils;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,6 +24,7 @@ public class AuthorController {
     private final AuthorView view;
     private final String apiKey = "a8fc5bcaa26cc72edfb3ab2e005ed622006d635bcd6123195cfcc5677a536a2d";
     private final Gson gson = new Gson();
+    private final DatabaseManager dbManager = new DatabaseManager();
 
     /**
      * Constructor for the AuthorController.
@@ -67,26 +69,60 @@ public class AuthorController {
     }
 
     /**
-     * Fetches the detailed profile of an author using their unique Google Scholar ID.
+     * Fetches and displays the detailed profile of an author using their unique Google Scholar ID.
+     * This method only displays the data and does not save it.
      * @param authorId The unique ID of the author.
+     * @return true if articles were found, otherwise false.
      */
-    public void findDetailsByAuthorId(String authorId) {
+    public boolean findDetailsByAuthorId(String authorId) {
         try {
             String encodedId = URLEncoder.encode(authorId, StandardCharsets.UTF_8.toString());
             String url = String.format("https://serpapi.com/search.json?engine=google_scholar_author&author_id=%s&api_key=%s", encodedId, apiKey);
-
             String jsonResponse = executeGetRequest(url);
-            if (jsonResponse == null) return;
+            if (jsonResponse == null) return false;
 
             AuthorProfileResponse profileResponse = gson.fromJson(jsonResponse, AuthorProfileResponse.class);
             if (profileResponse != null && profileResponse.getAuthor() != null) {
                 view.displayAuthorProfile(profileResponse);
+
+                // Return true if articles are present and available to be saved
+                return profileResponse.getArticles() != null && !profileResponse.getArticles().isEmpty();
             } else {
                 view.displayError("Could not retrieve the profile for the provided ID.");
+                return false;
             }
-
         } catch (Exception e) {
             view.displayError("An error occurred during the ID search: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Fetches author data again and saves their top 3 articles to the database.
+     * This method is called only after the user confirms they want to save the data.
+     * @param authorId The unique ID of the author whose articles will be saved.
+     */
+    public void saveArticlesToDatabase(String authorId) {
+        try {
+            // We repeat the API call to get the data again before saving.
+            // A more advanced implementation might cache the previous response, but this is simpler and effective.
+            String encodedId = URLEncoder.encode(authorId, StandardCharsets.UTF_8.toString());
+            String url = String.format("https://serpapi.com/search.json?engine=google_scholar_author&author_id=%s&api_key=%s", encodedId, apiKey);
+            String jsonResponse = executeGetRequest(url);
+            if (jsonResponse == null) return;
+
+            AuthorProfileResponse profileResponse = gson.fromJson(jsonResponse, AuthorProfileResponse.class);
+            if (profileResponse != null && profileResponse.getArticles() != null && !profileResponse.getArticles().isEmpty()) {
+                List<Article> articlesToSave = profileResponse.getArticles().subList(0, Math.min(3, profileResponse.getArticles().size()));
+
+                for(Article article : articlesToSave) {
+                    article.setResearcherId(authorId);
+                }
+
+                dbManager.saveArticles(articlesToSave);
+            }
+        } catch (Exception e) {
+            view.displayError("An error occurred while trying to save the articles: " + e.getMessage());
         }
     }
 
@@ -109,7 +145,7 @@ public class AuthorController {
             }
         } catch (Exception e) {
             view.displayError("HTTP request failed: " + e.getMessage());
-            return null;
         }
+        return null;
     }
 }

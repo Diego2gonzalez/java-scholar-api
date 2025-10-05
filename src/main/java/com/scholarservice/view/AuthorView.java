@@ -1,6 +1,7 @@
 package com.scholarservice.view;
 
 import com.scholarservice.model.*;
+import java.util.List; // <-- ¡Esta es la línea que faltaba!
 import java.util.Map;
 
 /**
@@ -27,13 +28,14 @@ public class AuthorView {
     }
 
     /**
-     * Displays the detailed profile of a specific author.
+     * Displays the detailed profile of a specific author, followed by their top 3 articles.
      * @param response The complete API response object containing the profile and citation data.
      */
     public void displayAuthorProfile(AuthorProfileResponse response) {
         AuthorProfile profile = response.getAuthor();
         CitedBy citedByData = response.getCitedBy();
 
+        // Muestra la información del perfil del autor
         System.out.println("\n--- Author's Detailed Profile ---");
         System.out.println("Name: " + profile.getName());
         System.out.println("Affiliation: " + (profile.getAffiliations() != null ? profile.getAffiliations() : "Not available"));
@@ -47,8 +49,25 @@ public class AuthorView {
         } catch (Exception e) {
             // If any part of the structure is null, the citation line is simply not printed.
         }
-
         System.out.println("-----------------------------------");
+
+        // Muestra los 3 primeros artículos del autor
+        if (response.getArticles() != null && !response.getArticles().isEmpty()) {
+            System.out.println("\n--- Top 3 Articles Found ---");
+            List<Article> topArticles = response.getArticles().subList(0, Math.min(3, response.getArticles().size()));
+
+            int articleNumber = 1;
+            for (Article article : topArticles) {
+                System.out.println("\n" + articleNumber + ". Title: " + article.getTitle());
+                System.out.println("   Authors: " + article.getAuthors());
+                System.out.println("   Publication: " + article.getPublicationInfo());
+                if (article.getCitedBy() != null) {
+                    System.out.println("   Cited by: " + article.getCitedBy().getValue());
+                }
+                articleNumber++;
+            }
+            System.out.println("--------------------------------------");
+        }
     }
 
     /**
